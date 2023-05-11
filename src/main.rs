@@ -32,11 +32,11 @@ impl EnvInfo {
                 Some(x) => x,
                 None    => break
             };
-            dbg!(current_var.0.clone());
-            dbg!(current_var.1.clone());
+            println!("{}: {}", current_var.0.clone(), current_var.1.clone());
             match current_var.0.as_str() {
                 "USER"              => {self.user = current_var.1}
                 "HOSTNAME"          => {self.host = current_var.1}
+                "NAME"              => {self.host = current_var.1}
                 "DESKTOP_SESSION"   => {self.desktop = current_var.1}
                 "TERM"              => {self.term = current_var.1}
                 "SHELL"             => {self.shell = current_var.1}
@@ -45,6 +45,11 @@ impl EnvInfo {
             }
         }
         // TODO: package count
+        // CURRENTLY SUPPORTED: dpkg
+        let package_count = Command::new("dpkg-query").arg("-f").arg(".").arg("-W").output().expect("Coudn't run command");
+        let num_packages = package_count.stdout.len();
+        self.package_count = String::from(num_packages.to_string());
+        dbg!(num_packages);
     }
 }
 
