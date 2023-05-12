@@ -1,7 +1,10 @@
 use std::env::{self, Vars};
+use std::fmt::Debug;
 use std::io::BufRead;
 use std::process::*;
 // allows running os commands
+
+
 
 #[derive(Debug)]
 struct EnvInfo {
@@ -87,26 +90,67 @@ impl EnvInfo {
         return name;
     }
 
-    fn render(&self) {
-        let mut lines: Vec<String> = Vec::new(); 
-        lines.push(self.user.clone());
-        lines.push(String::from("@"));
-        lines.push(self.host.clone());
-        lines.push(String::from("\nOS: "));
-        lines.push(self.os.clone());
-        lines.push(String::from("\nDesktop: "));
-        lines.push(self.desktop.clone());
-        lines.push(String::from("\nSession: "));
-        lines.push(self.session_type.clone());
-        lines.push(String::from("\nTerm: "));
-        lines.push(self.term.clone());
-        lines.push(String::from("\nShell: "));
-        lines.push(self.shell.clone());
-        lines.push(String::from("\npkg #: "));
-        lines.push(self.package_count.clone());
+    fn as_vec(&self) -> Vec<String> {
+        let mut vals: Vec<String> = Vec::new();
+        vals.push(self.os.clone());
+        vals.push(self.desktop.clone());
+        vals.push(self.session_type.clone());
+        vals.push(self.term.clone());
+        vals.push(self.shell.clone());
+        vals.push(self.package_count.clone());
+        return vals;
+    }
 
-        for line in lines {
-            print!("{}", line);
+    fn render(&self) {
+        let values = self.as_vec();
+        let separator = ":";
+        
+        let mut ascii_art: Vec<String> = Vec::new();
+        ascii_art.push(String::from(r"      /`·.¸         "));
+        ascii_art.push(String::from(r"     /¸...¸`:·      "));
+        ascii_art.push(String::from(r" ¸.·´  ¸   `·.¸.·´) "));
+        ascii_art.push(String::from(r": © ):´;      ¸  {  "));
+        ascii_art.push(String::from(r" `·.¸ `·  ¸.·´\`·¸) "));
+        ascii_art.push(String::from(r"     `\\´´\¸.·´     "));
+        let ascii_len = ascii_art[0].clone().len() - 2;
+
+        let mut labels: Vec<String> = Vec::new(); 
+        labels.push(String::from("OS"));
+        labels.push(String::from("Desktop"));
+        labels.push(String::from("Session"));
+        labels.push(String::from("Term"));
+        labels.push(String::from("Shell"));
+        labels.push(String::from("pkg #"));
+        
+        let mut blank_str = String::new();
+        for _ in 0..ascii_len {
+            blank_str.push(' ');
+        }
+
+        let mut largest = 0;
+        if largest < labels.len() {largest = labels.len()};
+        if largest < ascii_art.len() {largest = ascii_art.len()};
+        
+        println!("");
+        println!("{0}│ {1}@{2}", blank_str.clone(), self.user.clone(), self.host.clone());
+        for i in 0..=largest {
+            let art = match ascii_art.clone().into_iter().nth(i) {
+                Some(x) => x,
+                None => blank_str.clone(),
+            };
+            let label = match labels.clone().into_iter().nth(i) {
+                Some(x) => x,
+                None => String::new(),
+            };
+            let value = match values.clone().into_iter().nth(i) {
+                Some(x) => x,
+                None => String::new(),
+            };
+            if label.len() > 0 {
+                println!("{0}│ {1}{2} {3}", art, label, separator, value);
+            } else {
+                println!("{0}│ {1} {2}", art, label, value);
+            }
         }
         println!("");
     }
