@@ -1,5 +1,6 @@
 use std::env::{self, Vars};
-use std::process::Command;
+use std::io::BufRead;
+use std::process::*;
 // allows running os commands
 
 #[derive(Debug)]
@@ -46,10 +47,18 @@ impl EnvInfo {
         }
         // TODO: package count
         // CURRENTLY SUPPORTED: dpkg
-        let package_count = Command::new("dpkg-query").arg("-f").arg(".").arg("-W").output().expect("Coudn't run command");
-        let num_packages = package_count.stdout.len();
+        let mut num_packages = 0;
+        match Command::new("dpkg-query").arg("-f").arg(".").arg("-W").output() {
+            Ok(dpkg) => {num_packages += dpkg.stdout.lines().count()},
+            Err(_) => {}
+        }
+        match Command::new("rpm").arg("-qa").output() {
+            Ok(rpm) => {num_packages += rpm.stdout.lines().count()},
+            Err(_) => {}
+        }
+        
         self.package_count = String::from(num_packages.to_string());
-        dbg!(num_packages);
+        dbg!(self.package_count.clone());
     }
 }
 
