@@ -7,6 +7,7 @@ use std::process::*;
 struct EnvInfo {
     user: String,
     host: String,
+    os: String,
     desktop: String,
     session_type: String,
     term: String,
@@ -16,13 +17,14 @@ struct EnvInfo {
 
 impl EnvInfo {
     fn new() -> Self {
-        Self { user: String::new(),
-            host: String::new(),
-            desktop: String::new(),
-            session_type: String::new(),
-            term: String::new(),
-            shell: String::new(),
-            package_count: String::new()
+        Self { user: String::from("None"),
+            host: String::from("None"),
+            os: String::from("Not Found"),
+            desktop: String::from("None"),
+            session_type: String::from("None"),
+            term: String::from("None"),
+            shell: String::from("None"),
+            package_count: String::from("None")
         }
     }
 
@@ -33,7 +35,8 @@ impl EnvInfo {
                 Some(x) => x,
                 None    => break
             };
-            println!("{}: {}", current_var.0.clone(), current_var.1.clone());
+            // dbg, prints all env vars
+            // println!("{}: {}", current_var.0.clone(), current_var.1.clone());
             match current_var.0.as_str() {
                 "USER"              => {self.user = current_var.1}
                 "HOSTNAME"          => {self.host = current_var.1}
@@ -47,8 +50,13 @@ impl EnvInfo {
         }
         // TODO: package count
         // CURRENTLY SUPPORTED: dpkg
+        self.package_count = EnvInfo::get_num_packages();
+        self.os = EnvInfo::get_os_type();
+    }
+
+    fn get_num_packages() -> String {
         let mut num_packages = 0;
-        match Command::new("dpkg-query").arg("-f").arg(".").arg("-W").output() {
+        match Command::new("dpkg-query").arg("-f").arg(".\n").arg("-W").output() {
             Ok(dpkg) => {num_packages += dpkg.stdout.lines().count()},
             Err(_) => {}
         }
@@ -57,8 +65,50 @@ impl EnvInfo {
             Err(_) => {}
         }
         
-        self.package_count = String::from(num_packages.to_string());
-        dbg!(self.package_count.clone());
+        String::from(num_packages.to_string())
+    }
+
+    fn get_os_type() -> String {
+        let os_info = match Command::new("cat").arg("/etc/os-release").output() {
+            Ok(os) => os,
+            Err(_) => {panic!("unable to retrieve os info")}
+        };
+        let mut name = String::new();
+        os_info.stdout.lines().for_each(|line| {
+            match line {
+                Ok(field)   => {
+                    if field.starts_with("NAME") {
+                        name = field.split("=").last().expect("No os name").replace("\"", "").to_string();
+                    }
+                }
+                Err(_)  => {}
+            }
+        });
+        return name;
+    }
+
+    fn render(&self) {
+        let mut lines: Vec<String> = Vec::new(); 
+        lines.push(self.user.clone());
+        lines.push(String::from("@"));
+        lines.push(self.host.clone());
+        lines.push(String::from("\nOS: "));
+        lines.push(self.os.clone());
+        lines.push(String::from("\nDesktop: "));
+        lines.push(self.desktop.clone());
+        lines.push(String::from("\nSession: "));
+        lines.push(self.session_type.clone());
+        lines.push(String::from("\nTerm: "));
+        lines.push(self.term.clone());
+        lines.push(String::from("\nShell: "));
+        lines.push(self.shell.clone());
+        lines.push(String::from("\npkg #: "));
+        lines.push(self.package_count.clone());
+
+        for line in lines {
+            print!("{}", line);
+        }
+        println!("");
     }
 }
 
@@ -67,6 +117,5 @@ fn main() {
     let mut variables = env::vars();
     let mut env_info = EnvInfo::new();
     env_info.populate(&mut variables);
-    dbg!(env_info);
-    
+    env_info.render();
 }
