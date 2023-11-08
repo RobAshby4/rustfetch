@@ -67,6 +67,10 @@ impl EnvInfo {
             Ok(rpm) => {num_packages += rpm.stdout.lines().count()},
             Err(_) => {}
         }
+        match Command::new("nix-store").arg("--query").arg("--requisites").arg("/run/current-system").output() {
+            Ok(nix) => {num_packages += nix.stdout.lines().count()},
+            Err(_) => {}
+        }
         
         String::from(num_packages.to_string())
     }
