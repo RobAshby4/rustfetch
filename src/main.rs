@@ -2,9 +2,8 @@ use std::env::{self, Vars};
 use std::fmt::Debug;
 use std::io::BufRead;
 use std::process::*;
+use std::fs;
 // allows running os commands
-
-
 
 #[derive(Debug)]
 struct EnvInfo {
@@ -42,19 +41,29 @@ impl EnvInfo {
             // println!("{}: {}", current_var.0.clone(), current_var.1.clone());
             match current_var.0.as_str() {
                 "USER"              => {self.user = current_var.1}
-                "HOSTNAME"          => {self.host = current_var.1}
-                "NAME"              => {self.host = current_var.1}
                 "DESKTOP_SESSION"   => {self.desktop = current_var.1}
                 "TERM"              => {self.term = current_var.1}
                 "SHELL"             => {self.shell = current_var.1}
                 "XDG_SESSION_TYPE"  => {self.session_type = current_var.1}
                 _ => {},
             }
+
+            self.host = EnvInfo::get_host_name();
+
         }
         // TODO: package count
         // CURRENTLY SUPPORTED: dpkg
         self.package_count = EnvInfo::get_num_packages();
         self.os = EnvInfo::get_os_type();
+    }
+
+    fn get_host_name() -> String {
+        let mut hostname = match fs::read_to_string("/etc/hostname") {
+            Ok(x) => x,
+            Err(_) => String::from("host"),
+        };
+        hostname.pop();
+        return hostname
     }
 
     fn get_num_packages() -> String {
@@ -159,7 +168,6 @@ impl EnvInfo {
         println!("");
     }
 }
-
 
 fn main() {
     let mut variables = env::vars();
