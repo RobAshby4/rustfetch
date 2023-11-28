@@ -53,7 +53,7 @@ impl EnvInfo {
         }
         // TODO: package count
         // CURRENTLY SUPPORTED: dpkg
-        self.package_count = EnvInfo::get_num_packages();
+        self.package_count = EnvInfo::get_num_packages(self.user.as_str());
         self.os = EnvInfo::get_os_type();
     }
 
@@ -66,17 +66,25 @@ impl EnvInfo {
         return hostname
     }
 
-    fn get_num_packages() -> String {
+    fn get_num_packages(user: &str) -> String {
         let mut num_packages = 0;
+        // dpkg
         match Command::new("dpkg-query").arg("-f").arg(".\n").arg("-W").output() {
             Ok(dpkg) => {num_packages += dpkg.stdout.lines().count()},
             Err(_) => {}
         }
+        // rpm
         match Command::new("rpm").arg("-qa").output() {
             Ok(rpm) => {num_packages += rpm.stdout.lines().count()},
             Err(_) => {}
         }
-        match Command::new("nix-store").arg("--query").arg("--requisites").arg("/run/current-system").output() {
+        // nix
+        match Command::new("nix-store").arg("--query").arg("--requisites").arg("/run/current-system/sw").output() {
+            Ok(nix) => {num_packages += nix.stdout.lines().count()},
+            Err(_) => {}
+        }
+        let fmt_nix_path = format!("/etc/profiles/per-user/{}", user);
+        match Command::new("nix-store").arg("--query").arg("--requisites").arg(fmt_nix_path).output() {
             Ok(nix) => {num_packages += nix.stdout.lines().count()},
             Err(_) => {}
         }
